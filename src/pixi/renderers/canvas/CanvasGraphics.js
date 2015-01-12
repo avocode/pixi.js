@@ -30,7 +30,7 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
         this.updateGraphicsTint(graphics);
         graphics.dirty = false;
     }
-    
+
 
     for (var i = 0; i < graphics.graphicsData.length; i++)
     {
@@ -40,6 +40,7 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
         var fillColor = data._fillTint;
         var lineColor = data._lineTint;
 
+        context.setLineDash(data.lineDash);
         context.lineWidth = data.lineWidth;
 
         if(data.type === PIXI.Graphics.POLY)
@@ -86,7 +87,21 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
             {
                 context.globalAlpha = data.fillAlpha * worldAlpha;
                 context.fillStyle = '#' + ('00000' + ( fillColor | 0).toString(16)).substr(-6);
+
+                if (data.shadow) {
+                    context.shadowBlur = data.shadow.blur;
+                    context.shadowOffsetX = data.shadow.offsetX;
+                    context.shadowOffsetY = data.shadow.offsetY;
+                    context.shadowColor = data.shadow.color;
+                }
+
                 context.fillRect(shape.x, shape.y, shape.width, shape.height);
+
+                // reset shadow to defaults
+                context.shadowBlur = 0;
+                context.shadowOffsetX = 0;
+                context.shadowOffsetY = 0;
+                context.shadowColor = 'rgba(0, 0, 0, 0)';
 
             }
             if(data.lineWidth)
@@ -226,9 +241,9 @@ PIXI.CanvasGraphics.renderGraphicsMask = function(graphics, context)
         if(data.type === PIXI.Graphics.POLY)
         {
             context.beginPath();
-        
+
             var points = shape.points;
-        
+
             context.moveTo(points[0], points[1]);
 
             for (var j=1; j < points.length/2; j++)
@@ -286,7 +301,7 @@ PIXI.CanvasGraphics.renderGraphicsMask = function(graphics, context)
         }
         else if (data.type === PIXI.Graphics.RREC)
         {
-        
+
             var pts = shape.points;
             var rx = pts[0];
             var ry = pts[1];
@@ -330,7 +345,7 @@ PIXI.CanvasGraphics.updateGraphicsTint = function(graphics)
         /*
         var colorR = (fillColor >> 16 & 0xFF) / 255;
         var colorG = (fillColor >> 8 & 0xFF) / 255;
-        var colorB = (fillColor & 0xFF) / 255; 
+        var colorB = (fillColor & 0xFF) / 255;
 
         colorR *= tintR;
         colorG *= tintG;
@@ -340,19 +355,18 @@ PIXI.CanvasGraphics.updateGraphicsTint = function(graphics)
 
         colorR = (lineColor >> 16 & 0xFF) / 255;
         colorG = (lineColor >> 8 & 0xFF) / 255;
-        colorB = (lineColor & 0xFF) / 255; 
+        colorB = (lineColor & 0xFF) / 255;
 
         colorR *= tintR;
         colorG *= tintG;
         colorB *= tintB;
 
-        lineColor = ((colorR*255 << 16) + (colorG*255 << 8) + colorB*255);   
+        lineColor = ((colorR*255 << 16) + (colorG*255 << 8) + colorB*255);
         */
-        
+
         // super inline cos im an optimization NAZI :)
         data._fillTint = (((fillColor >> 16 & 0xFF) / 255 * tintR*255 << 16) + ((fillColor >> 8 & 0xFF) / 255 * tintG*255 << 8) +  (fillColor & 0xFF) / 255 * tintB*255);
         data._lineTint = (((lineColor >> 16 & 0xFF) / 255 * tintR*255 << 16) + ((lineColor >> 8 & 0xFF) / 255 * tintG*255 << 8) +  (lineColor & 0xFF) / 255 * tintB*255);
 
     }
 };
-

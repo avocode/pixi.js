@@ -4,7 +4,7 @@
  * Copyright (c) 2012-2014, Mat Groves
  * http://goodboydigital.com/
  *
- * Compiled: 2015-01-06
+ * Compiled: 2015-01-12
  *
  * pixi.js is licensed under the MIT License.
  * http://www.opensource.org/licenses/mit-license.php
@@ -11162,7 +11162,7 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
         this.updateGraphicsTint(graphics);
         graphics.dirty = false;
     }
-    
+
 
     for (var i = 0; i < graphics.graphicsData.length; i++)
     {
@@ -11172,6 +11172,7 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
         var fillColor = data._fillTint;
         var lineColor = data._lineTint;
 
+        context.setLineDash(data.lineDash);
         context.lineWidth = data.lineWidth;
 
         if(data.type === PIXI.Graphics.POLY)
@@ -11218,7 +11219,21 @@ PIXI.CanvasGraphics.renderGraphics = function(graphics, context)
             {
                 context.globalAlpha = data.fillAlpha * worldAlpha;
                 context.fillStyle = '#' + ('00000' + ( fillColor | 0).toString(16)).substr(-6);
+
+                if (data.shadow) {
+                    context.shadowBlur = data.shadow.blur;
+                    context.shadowOffsetX = data.shadow.offsetX;
+                    context.shadowOffsetY = data.shadow.offsetY;
+                    context.shadowColor = data.shadow.color;
+                }
+
                 context.fillRect(shape.x, shape.y, shape.width, shape.height);
+
+                // reset shadow to defaults
+                context.shadowBlur = 0;
+                context.shadowOffsetX = 0;
+                context.shadowOffsetY = 0;
+                context.shadowColor = 'rgba(0, 0, 0, 0)';
 
             }
             if(data.lineWidth)
@@ -11358,9 +11373,9 @@ PIXI.CanvasGraphics.renderGraphicsMask = function(graphics, context)
         if(data.type === PIXI.Graphics.POLY)
         {
             context.beginPath();
-        
+
             var points = shape.points;
-        
+
             context.moveTo(points[0], points[1]);
 
             for (var j=1; j < points.length/2; j++)
@@ -11418,7 +11433,7 @@ PIXI.CanvasGraphics.renderGraphicsMask = function(graphics, context)
         }
         else if (data.type === PIXI.Graphics.RREC)
         {
-        
+
             var pts = shape.points;
             var rx = pts[0];
             var ry = pts[1];
@@ -11462,7 +11477,7 @@ PIXI.CanvasGraphics.updateGraphicsTint = function(graphics)
         /*
         var colorR = (fillColor >> 16 & 0xFF) / 255;
         var colorG = (fillColor >> 8 & 0xFF) / 255;
-        var colorB = (fillColor & 0xFF) / 255; 
+        var colorB = (fillColor & 0xFF) / 255;
 
         colorR *= tintR;
         colorG *= tintG;
@@ -11472,15 +11487,15 @@ PIXI.CanvasGraphics.updateGraphicsTint = function(graphics)
 
         colorR = (lineColor >> 16 & 0xFF) / 255;
         colorG = (lineColor >> 8 & 0xFF) / 255;
-        colorB = (lineColor & 0xFF) / 255; 
+        colorB = (lineColor & 0xFF) / 255;
 
         colorR *= tintR;
         colorG *= tintG;
         colorB *= tintB;
 
-        lineColor = ((colorR*255 << 16) + (colorG*255 << 8) + colorB*255);   
+        lineColor = ((colorR*255 << 16) + (colorG*255 << 8) + colorB*255);
         */
-        
+
         // super inline cos im an optimization NAZI :)
         data._fillTint = (((fillColor >> 16 & 0xFF) / 255 * tintR*255 << 16) + ((fillColor >> 8 & 0xFF) / 255 * tintG*255 << 8) +  (fillColor & 0xFF) / 255 * tintB*255);
         data._lineTint = (((lineColor >> 16 & 0xFF) / 255 * tintR*255 << 16) + ((lineColor >> 8 & 0xFF) / 255 * tintG*255 << 8) +  (lineColor & 0xFF) / 255 * tintB*255);
@@ -11488,14 +11503,13 @@ PIXI.CanvasGraphics.updateGraphicsTint = function(graphics)
     }
 };
 
-
 /**
  * @author Mat Groves http://matgroves.com/ @Doormat23
  */
 
 /**
  * The Graphics class contains methods used to draw primitive shapes such as lines, circles and rectangles to the display, and color and fill them.
- * 
+ *
  * @class Graphics
  * @extends DisplayObjectContainer
  * @constructor
@@ -11521,6 +11535,22 @@ PIXI.Graphics = function()
      * @type Number
      */
     this.lineWidth = 0;
+
+    /**
+     * The dash of any lines drawn
+     *
+     * @property listDash
+     * @type {Array}
+     */
+    this.lineDash = [];
+
+    /**
+     * Shadow
+     *
+     * @property shadow
+     * @type {Object}
+     */
+    this.shadow = null;
 
     /**
      * The color of any lines drawn.
@@ -11557,7 +11587,7 @@ PIXI.Graphics = function()
      * @default PIXI.blendModes.NORMAL;
      */
     this.blendMode = PIXI.blendModes.NORMAL;
-    
+
     /**
      * Current path
      *
@@ -11566,7 +11596,7 @@ PIXI.Graphics = function()
      * @private
      */
     this.currentPath = null;
-    
+
     /**
      * Array containing some WebGL-related properties used by the WebGL renderer.
      *
@@ -11596,7 +11626,7 @@ PIXI.Graphics = function()
 
     /**
      * Used to detect if the graphics object has changed. If this is set to true then the graphics object will be recalculated.
-     * 
+     *
      * @property dirty
      * @type Boolean
      * @private
@@ -11605,7 +11635,7 @@ PIXI.Graphics = function()
 
     /**
      * Used to detect if the webgl graphics object has changed. If this is set to true then the graphics object will be recalculated.
-     * 
+     *
      * @property webGLDirty
      * @type Boolean
      * @private
@@ -11614,7 +11644,7 @@ PIXI.Graphics = function()
 
     /**
      * Used to detect if the cached sprite object needs to be updated.
-     * 
+     *
      * @property cachedSpriteDirty
      * @type Boolean
      * @private
@@ -11668,11 +11698,12 @@ Object.defineProperty(PIXI.Graphics.prototype, "cacheAsBitmap", {
  * @param alpha {Number} alpha of the line to draw, will update the objects stored style
  * @return {Graphics}
  */
-PIXI.Graphics.prototype.lineStyle = function(lineWidth, color, alpha)
+PIXI.Graphics.prototype.lineStyle = function(lineWidth, color, alpha, lineDash)
 {
     this.lineWidth = lineWidth || 0;
     this.lineColor = color || 0;
     this.lineAlpha = (arguments.length < 3) ? 1 : alpha;
+    this.lineDash = lineDash || [];
 
     if(this.currentPath)
     {
@@ -11687,7 +11718,8 @@ PIXI.Graphics.prototype.lineStyle = function(lineWidth, color, alpha)
         this.currentPath.lineWidth = this.lineWidth;
         this.currentPath.lineColor = this.lineColor;
         this.currentPath.lineAlpha = this.lineAlpha;
-        
+        this.currentPath.lineDash = this.lineDash;
+
     }
 
     return this;
@@ -11752,7 +11784,7 @@ PIXI.Graphics.prototype.quadraticCurveTo = function(cpX, cpY, toX, toY)
     n = 20,
     points = this.currentPath.shape.points;
     if(points.length === 0)this.moveTo(0, 0);
-    
+
 
     var fromX = points[points.length-2];
     var fromY = points[points.length-1];
@@ -11808,7 +11840,7 @@ PIXI.Graphics.prototype.bezierCurveTo = function(cpX, cpY, cpX2, cpY2, toX, toY)
 
     var fromX = points[points.length-2];
     var fromY = points[points.length-1];
-    
+
     var j = 0;
 
     for (var i=1; i<=n; i++)
@@ -11821,11 +11853,11 @@ PIXI.Graphics.prototype.bezierCurveTo = function(cpX, cpY, cpX2, cpY2, toX, toY)
 
         t2 = j * j;
         t3 = t2 * j;
-        
+
         points.push( dt3 * fromX + 3 * dt2 * j * cpX + 3 * dt * t2 * cpX2 + t3 * toX,
                      dt3 * fromY + 3 * dt2 * j * cpY + 3 * dt * t2 * cpY2 + t3 * toY);
     }
-    
+
     this.dirty = true;
 
     return this;
@@ -11833,7 +11865,7 @@ PIXI.Graphics.prototype.bezierCurveTo = function(cpX, cpY, cpX2, cpY2, toX, toY)
 
 /*
  * The arcTo() method creates an arc/curve between two tangents on the canvas.
- * 
+ *
  * "borrowed" from https://code.google.com/p/fxcanvas/ - thanks google!
  *
  * @method arcTo
@@ -11938,7 +11970,7 @@ PIXI.Graphics.prototype.arc = function(cx, cy, radius, startAngle, endAngle, ant
         this.moveTo(startX, startY);
         points = this.currentPath.shape.points;
     }
-    
+
     if (startAngle === endAngle)return this;
 
     if( !anticlockwise && endAngle <= startAngle )
@@ -11960,7 +11992,7 @@ PIXI.Graphics.prototype.arc = function(cx, cy, radius, startAngle, endAngle, ant
 
     var cTheta = Math.cos(theta);
     var sTheta = Math.sin(theta);
-    
+
     var segMinus = segs - 1;
 
     var remainder = ( segMinus % 1 ) / segMinus;
@@ -11969,7 +12001,7 @@ PIXI.Graphics.prototype.arc = function(cx, cy, radius, startAngle, endAngle, ant
     {
         var real =  i + remainder * i;
 
-    
+
         var angle = ((theta) + startAngle + (theta2 * real));
 
         var c = Math.cos(angle);
@@ -12114,6 +12146,7 @@ PIXI.Graphics.prototype.drawPolygon = function(path)
 PIXI.Graphics.prototype.clear = function()
 {
     this.lineWidth = 0;
+    this.lineDash = [];
     this.filling = false;
 
     this.dirty = true;
@@ -12137,16 +12170,16 @@ PIXI.Graphics.prototype.generateTexture = function(resolution, scaleMode)
     resolution = resolution || 1;
 
     var bounds = this.getBounds();
-   
+
     var canvasBuffer = new PIXI.CanvasBuffer(bounds.width * resolution, bounds.height * resolution);
-    
+
     var texture = PIXI.Texture.fromCanvas(canvasBuffer.canvas, scaleMode);
     texture.baseTexture.resolution = resolution;
 
     canvasBuffer.context.scale(resolution, resolution);
 
     canvasBuffer.context.translate(-bounds.x,-bounds.y);
-    
+
     PIXI.CanvasGraphics.renderGraphics(this, canvasBuffer.context);
 
     return texture;
@@ -12156,7 +12189,7 @@ PIXI.Graphics.prototype.generateTexture = function(resolution, scaleMode)
 * Renders the object using the WebGL renderer
 *
 * @method _renderWebGL
-* @param renderSession {RenderSession} 
+* @param renderSession {RenderSession}
 * @private
 */
 PIXI.Graphics.prototype._renderWebGL = function(renderSession)
@@ -12171,7 +12204,7 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
         {
 
             this._generateCachedSprite();
-   
+
             // we will also need to update the texture on the gpu too!
             this.updateCachedSpriteTexture();
 
@@ -12191,7 +12224,7 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
 
         if(this._mask)renderSession.maskManager.pushMask(this._mask, renderSession);
         if(this._filters)renderSession.filterManager.pushFilter(this._filterBlock);
-      
+
         // check blend mode
         if(this.blendMode !== renderSession.spriteBatch.currentBlendMode)
         {
@@ -12199,16 +12232,16 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
             var blendModeWebGL = PIXI.blendModesWebGL[renderSession.spriteBatch.currentBlendMode];
             renderSession.spriteBatch.gl.blendFunc(blendModeWebGL[0], blendModeWebGL[1]);
         }
-        
+
         // check if the webgl graphic needs to be updated
         if(this.webGLDirty)
         {
             this.dirty = true;
             this.webGLDirty = false;
         }
-        
+
         PIXI.WebGLGraphics.renderGraphics(this, renderSession);
-        
+
         // only render if it has children!
         if(this.children.length)
         {
@@ -12225,7 +12258,7 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
 
         if(this._filters)renderSession.filterManager.popFilter();
         if(this._mask)renderSession.maskManager.popMask(this.mask, renderSession);
-          
+
         renderSession.drawCount++;
 
         renderSession.spriteBatch.start();
@@ -12236,20 +12269,20 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
 * Renders the object using the Canvas renderer
 *
 * @method _renderCanvas
-* @param renderSession {RenderSession} 
+* @param renderSession {RenderSession}
 * @private
 */
 PIXI.Graphics.prototype._renderCanvas = function(renderSession)
 {
     // if the sprite is not visible or the alpha is 0 then no need to render this element
     if(this.visible === false || this.alpha === 0 || this.isMask === true)return;
-    
+
     if(this._cacheAsBitmap)
     {
         if(this.dirty || this.cachedSpriteDirty)
         {
             this._generateCachedSprite();
-   
+
             // we will also need to update the texture
             this.updateCachedSpriteTexture();
 
@@ -12266,7 +12299,7 @@ PIXI.Graphics.prototype._renderCanvas = function(renderSession)
     {
         var context = renderSession.context;
         var transform = this.worldTransform;
-        
+
         if(this.blendMode !== renderSession.currentBlendMode)
         {
             renderSession.currentBlendMode = this.blendMode;
@@ -12402,7 +12435,7 @@ PIXI.Graphics.prototype.updateLocalBounds = function()
             var type = data.type;
             var lineWidth = data.lineWidth;
             shape = data.shape;
-           
+
 
             if(type === PIXI.Graphics.RECT || type === PIXI.Graphics.RREC)
             {
@@ -12447,7 +12480,7 @@ PIXI.Graphics.prototype.updateLocalBounds = function()
             {
                 // POLY
                 points = shape.points;
-                
+
                 for (var j = 0; j < points.length; j+=2)
                 {
 
@@ -12471,7 +12504,7 @@ PIXI.Graphics.prototype.updateLocalBounds = function()
     }
 
     var padding = this.boundsPadding;
-    
+
     this._localBounds.x = minX - padding;
     this._localBounds.width = (maxX - minX) + padding * 2;
 
@@ -12493,7 +12526,7 @@ PIXI.Graphics.prototype._generateCachedSprite = function()
     {
         var canvasBuffer = new PIXI.CanvasBuffer(bounds.width, bounds.height);
         var texture = PIXI.Texture.fromCanvas(canvasBuffer.canvas);
-        
+
         this._cachedSprite = new PIXI.Sprite(texture);
         this._cachedSprite.buffer = canvasBuffer;
 
@@ -12510,8 +12543,8 @@ PIXI.Graphics.prototype._generateCachedSprite = function()
 
    // this._cachedSprite.buffer.context.save();
     this._cachedSprite.buffer.context.translate(-bounds.x,-bounds.y);
-    
-    // make sure we set the alpha of the graphics to 1 for the render.. 
+
+    // make sure we set the alpha of the graphics to 1 for the render..
     this.worldAlpha = 1;
 
     // now render the graphic..
@@ -12574,10 +12607,10 @@ PIXI.Graphics.prototype.drawShape = function(shape)
 
     this.currentPath = null;
 
-    var data = new PIXI.GraphicsData(this.lineWidth, this.lineColor, this.lineAlpha, this.fillColor, this.fillAlpha, this.filling, shape);
-    
+    var data = new PIXI.GraphicsData(this.lineWidth, this.lineColor, this.lineAlpha, this.lineDash, this.fillColor, this.fillAlpha, this.filling, this.shadow, shape);
+
     this.graphicsData.push(data);
-    
+
     if(data.type === PIXI.Graphics.POLY)
     {
         data.shape.closed = this.filling;
@@ -12591,21 +12624,23 @@ PIXI.Graphics.prototype.drawShape = function(shape)
 
 /**
  * A GraphicsData object.
- * 
+ *
  * @class GraphicsData
  * @constructor
  */
-PIXI.GraphicsData = function(lineWidth, lineColor, lineAlpha, fillColor, fillAlpha, fill, shape)
+PIXI.GraphicsData = function(lineWidth, lineColor, lineAlpha, lineDash, fillColor, fillAlpha, fill, shadow, shape)
 {
     this.lineWidth = lineWidth;
     this.lineColor = lineColor;
     this.lineAlpha = lineAlpha;
+    this.lineDash = lineDash;
     this._lineTint = lineColor;
 
     this.fillColor = fillColor;
     this.fillAlpha = fillAlpha;
     this._fillTint = fillColor;
     this.fill = fill;
+    this.shadow = shadow;
 
     this.shape = shape;
     this.type = shape.type;
@@ -12623,7 +12658,6 @@ PIXI.Rectangle.prototype.type = PIXI.Graphics.RECT;
 PIXI.Circle.prototype.type = PIXI.Graphics.CIRC;
 PIXI.Ellipse.prototype.type = PIXI.Graphics.ELIP;
 PIXI.RoundedRectangle.prototype.type = PIXI.Graphics.RREC;
-
 
 /**
  * @author Mat Groves http://matgroves.com/

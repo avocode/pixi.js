@@ -6,7 +6,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-connect');
     grunt.loadNpmTasks('grunt-contrib-yuidoc');
     grunt.loadNpmTasks('grunt-contrib-watch');
-    
+
     grunt.loadTasks('tasks');
 
     var srcFiles = [
@@ -213,7 +213,7 @@ module.exports = function(grunt) {
 
     grunt.registerTask('default', ['build', 'test']);
 
-    grunt.registerTask('build', ['jshint:source', 'concat', 'uglify']);
+    grunt.registerTask('build', ['concat', 'uglify']);
     grunt.registerTask('build-debug', ['concat_sourcemap', 'uglify']);
 
     grunt.registerTask('test', ['concat', 'jshint:test', 'karma']);
@@ -222,6 +222,6 @@ module.exports = function(grunt) {
     grunt.registerTask('travis', ['build', 'test']);
 
     grunt.registerTask('default', ['build', 'test']);
-    
+
     grunt.registerTask('debug-watch', ['concat_sourcemap', 'watch:debug']);
 };
